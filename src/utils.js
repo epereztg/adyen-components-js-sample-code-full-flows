@@ -13,7 +13,12 @@ const paymentsDefaultConfig = {
     reference: 'Checkout Components sample code test',
     countryCode: 'NL',
     channel: 'Web',
-    returnUrl: 'https://your-company.com/',
+    returnUrl: 'http://localhost:3000/dropin',
+    additionalData: {
+        allow3DS2: true
+    },
+    channel: 'Web',
+    origin: 'http://localhost:3000/dropin',
     amount: {
         value: 1000,
         currency: 'EUR'
@@ -31,7 +36,18 @@ const paymentsDefaultConfig = {
         }
     ]
 };
-
+const httpPostnoJson = (endpoint, data) =>
+    fetch(`/${endpoint}`, {
+        method: 'POST',
+        headers: {
+            Accept: 'application/json, text/plain, */*',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(
+      response => response.text()
+    ); // convert to plain text
 // Generic POST Helper
 const httpPost = (endpoint, data) =>
     fetch(`/${endpoint}`, {
@@ -71,6 +87,29 @@ const makePayment = (paymentMethod, config = {}) => {
         .catch(console.error);
 };
 
+const paymentDetails = (paymentData) => {
+    var paymentRequest = paymentData;
+
+    //if (getActionType() == "redirect") {
+        // paymentRequest = {
+        //     paymentData: paymentData.paymentData,
+        //     details: {
+        //         [detailsKey]: paymentData.details
+        //     }
+        // }
+    //}
+
+    return httpPostnoJson('payments/details', paymentRequest)
+        .then(response => {
+            if (response.error) throw 'Payment details failed';
+            console.log("paymentdetails response: "+response)
+            return response;
+        })
+        .catch(error => {
+            console.log('error on paymentDetails' + error)
+            throw Error(error);
+        });
+};
 // Fetches an originKey from the local server
 const getOriginKey = () =>
     httpPost('originKeys')
@@ -81,7 +120,7 @@ const getOriginKey = () =>
         })
         .catch(console.error);
 
-// Fetches a clientKey from the 
+// Fetches a clientKey from the
 const getClientKey = () =>
     httpPost('clientKeys')
         .then(response => {
